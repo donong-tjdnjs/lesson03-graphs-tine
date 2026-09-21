@@ -86,7 +86,7 @@ top5_movies = (
 # TOP 5 영화 데이터 필터링
 top5_data = data[data["영화명"].isin(top5_movies)].sort_values("날짜")
 
-# Plotly 선 그래프 생성 (color='영화명'으로 영화별 색상 구분)
+# Plotly 선 그래프 생성
 fig2 = px.line(
     top5_data,
     x="날짜",
@@ -97,12 +97,10 @@ fig2 = px.line(
     markers=True,
 )
 
-# 호버 툴팁 포맷 설정
 fig2.update_traces(
     hovertemplate="<b>영화명:</b> %{fullData.name}<br><b>날짜:</b> %{x|%Y-%m-%d}<br><b>일관객:</b> %{y:,.0f}명<extra></extra>"
 )
 
-# 레이아웃 설정 (범례 클릭 시 켜고 끌 수 있는 기능 기본 제공)
 fig2.update_layout(
     xaxis_title="날짜",
     yaxis_title="일일 관객수 (명)",
@@ -112,7 +110,6 @@ fig2.update_layout(
 
 st.plotly_chart(fig2, use_container_width=True)
 
-# 그래프 해석 문구 자리
 st.info(
     "💡 **이 그래프로 알 수 있는 것:** 기간 내 흥행 Top 5 영화들의 개봉 시기별 관객 집중도와 경쟁 구도를 한눈에 비교할 수 있습니다."
 )
@@ -120,8 +117,72 @@ st.info(
 st.markdown("---")
 
 
-# 6. 추후 그래프 추가를 위한 구역 예시
-st.header("📌 Section 3. (추가 예정 구역)")
+# 6. 그래프 구역 3: 날짜별 10위권 일관객 총합 (영역 그래프)
+st.header("📌 Section 3. 날짜별 10위권 일관객 총합 추이")
+
+# 날짜별 10위권 전체 관객수 합계 계산
+daily_sum = (
+    data.groupby("날짜", as_index=False)["일관객"]
+    .sum()
+    .rename(columns={"일관객": "총일관객"})
+    .sort_values("날짜")
+)
+
+# Plotly 영역 그래프 (Area Chart) 생성
+fig3 = px.area(
+    daily_sum,
+    x="날짜",
+    y="총일관객",
+    title="날짜별 10위권 영화 일관객 합계 변화",
+    labels={"날짜": "날짜", "총일관객": "10위권 관객수 합계 (명)"},
+)
+
+fig3.update_traces(
+    hovertemplate="<b>날짜:</b> %{x|%Y-%m-%d}<br><b>10위권 관객 합계:</b> %{y:,.0f}명<extra></extra>",
+    line=dict(color="#1f77b4"),
+)
+
+# 합계 관객수가 가장 컸던 상위 3일 추출
+top3_days = daily_sum.nlargest(3, "총일관객")
+
+# 상위 3일에 어노테이션(화살표 및 날짜/관객수 표기) 추가
+for i, row in top3_days.reset_index().iterrows():
+    date_str = row["날짜"].strftime("%Y-%m-%d")
+    audience_val = row["총일관객"]
+
+    fig3.add_annotation(
+        x=row["날짜"],
+        y=audience_val,
+        text=f"<b>{i+1}위: {date_str}</b><br>({audience_val:,.0f}명)",
+        showarrow=True,
+        arrowhead=2,
+        arrowsize=1,
+        arrowwidth=2,
+        arrowcolor="#d62728",
+        ax=0,
+        ay=-40,  # 텍스트 박스를 점 위로 띄움
+        bgcolor="rgba(255, 255, 255, 0.8)",
+        bordercolor="#d62728",
+        borderwidth=1,
+    )
+
+fig3.update_layout(
+    xaxis_title="날짜",
+    yaxis_title="10위권 관객수 합계 (명)",
+    hovermode="x unified",
+)
+
+st.plotly_chart(fig3, use_container_width=True)
+
+st.info(
+    "💡 **이 그래프로 알 수 있는 것:** 영화 시장 전체의 성수기·비수기 흐름을 파악하고, 일일 총 관객수가 가장 폭발했던 최고 흥행일을 확인할 수 있습니다."
+)
+
+st.markdown("---")
+
+
+# 7. 추후 그래프 추가를 위한 구역 예시
+st.header("📌 Section 4. (추가 예정 구역)")
 st.caption("새로운 그래프가 추가될 위치입니다.")
 st.info("💡 **이 그래프로 알 수 있는 것:** (추가 예정 설명 문구)")
 
