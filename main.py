@@ -25,51 +25,46 @@ def load_data():
 data = load_data()
 
 
-# 3. 데이터 선택 및 필터 구역 (사이드바 또는 상단)
+# 3. 데이터 선택 및 필터 구역 (사이드바)
 st.sidebar.header("🔍 데이터 필터")
 
 # 전체 영화 목록 추출 (오름차순 정렬)
 movie_list = sorted(data["영화명"].unique())
 
-# 영화 선택 드롭다운
+# 영화 선택 드롭다운 (Section 1용)
 selected_movie = st.sidebar.selectbox("영화를 선택하세요:", movie_list)
 
 # 선택한 영화의 데이터만 필터링
 filtered_data = data[data["영화명"] == selected_movie].sort_values("날짜")
 
 
-# 4. 그래프 구역 1: 시간 축 분석
-st.header("📌 Section 1. 일별 관객수 변화 (시간 분석)")
+# 4. 그래프 구역 1: 개별 영화 일별 관객수 변화
+st.header("📌 Section 1. 개별 영화 일별 관객수 변화")
 
 if not filtered_data.empty:
-    # Plotly 선 그래프 생성
-    fig = px.line(
+    fig1 = px.line(
         filtered_data,
         x="날짜",
         y="일관객",
         title=f"[{selected_movie}] 날짜별 일관객수 추이",
         labels={"날짜": "날짜", "일관객": "일일 관객수 (명)"},
-        markers=True,  # 각 데이터 포인트에 점 표시
+        markers=True,
     )
 
-    # 마우스 오버(호버) 시 날짜 및 관객수 포맷 설정
-    fig.update_traces(
+    fig1.update_traces(
         hovertemplate="<b>날짜:</b> %{x|%Y-%m-%d}<br><b>일관객:</b> %{y:,.0f}명<extra></extra>"
     )
 
-    # 그래프 축 및 레이아웃 다듬기
-    fig.update_layout(
+    fig1.update_layout(
         xaxis_title="날짜",
         yaxis_title="일일 관객수 (명)",
         hovermode="x unified",
     )
 
-    # Streamlit에 그래프 출력
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig1, use_container_width=True)
 
-    # 그래프 해석 문구 자리 (자연스러운 디자인을 위해 info 상자 활용)
     st.info(
-        f"💡 **이 그래프로 알 수 있는 것:** {selected_movie}의 일별 관객수 흐름을 통해 개봉 초기 흥행 및 관객수 감소 추세를 파악할 수 있습니다."
+        f"💡 **이 그래프로 알 수 있는 것:** {selected_movie}의 일별 관객수 흐름을 통해 개봉 초기 흥행 추세 및 관객수 감소 속도를 분석할 수 있습니다."
     )
 else:
     st.warning("선택한 영화의 데이터가 존재하지 않습니다.")
@@ -77,8 +72,56 @@ else:
 st.markdown("---")
 
 
-# 5. 추후 그래프 추가를 위한 구역 예시 (Section 2, 3...)
-st.header("📌 Section 2. (추가 예정 구역)")
+# 5. 그래프 구역 2: 누적 일관객 TOP 5 영화 비교
+st.header("📌 Section 2. 누적 일관객 TOP 5 영화의 관객수 추이 비교")
+
+# 해당 기간 일관객 합계 상위 5개 영화 추출
+top5_movies = (
+    data.groupby("영화명")["일관객"]
+    .sum()
+    .nlargest(5)
+    .index.tolist()
+)
+
+# TOP 5 영화 데이터 필터링
+top5_data = data[data["영화명"].isin(top5_movies)].sort_values("날짜")
+
+# Plotly 선 그래프 생성 (color='영화명'으로 영화별 색상 구분)
+fig2 = px.line(
+    top5_data,
+    x="날짜",
+    y="일관객",
+    color="영화명",
+    title="기간 내 일관객 합계 TOP 5 영화 날짜별 비교",
+    labels={"날짜": "날짜", "일관객": "일일 관객수 (명)", "영화명": "영화 제목"},
+    markers=True,
+)
+
+# 호버 툴팁 포맷 설정
+fig2.update_traces(
+    hovertemplate="<b>영화명:</b> %{fullData.name}<br><b>날짜:</b> %{x|%Y-%m-%d}<br><b>일관객:</b> %{y:,.0f}명<extra></extra>"
+)
+
+# 레이아웃 설정 (범례 클릭 시 켜고 끌 수 있는 기능 기본 제공)
+fig2.update_layout(
+    xaxis_title="날짜",
+    yaxis_title="일일 관객수 (명)",
+    legend_title="영화 목록 (클릭하여 토글)",
+    hovermode="x unified",
+)
+
+st.plotly_chart(fig2, use_container_width=True)
+
+# 그래프 해석 문구 자리
+st.info(
+    "💡 **이 그래프로 알 수 있는 것:** 기간 내 흥행 Top 5 영화들의 개봉 시기별 관객 집중도와 경쟁 구도를 한눈에 비교할 수 있습니다."
+)
+
+st.markdown("---")
+
+
+# 6. 추후 그래프 추가를 위한 구역 예시
+st.header("📌 Section 3. (추가 예정 구역)")
 st.caption("새로운 그래프가 추가될 위치입니다.")
 st.info("💡 **이 그래프로 알 수 있는 것:** (추가 예정 설명 문구)")
 
