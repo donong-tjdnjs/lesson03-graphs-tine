@@ -190,7 +190,7 @@ top10_summary = (
     .agg(총관객수=("일관객", "sum"), 진입일수=("날짜", "count"))
     .reset_index()
     .nlargest(10, "총관객수")
-    .sort_values("총관객수", ascending=True)  # Plotly 가로 막대에서 가장 큰 값이 위에 오도록 정렬
+    .sort_values("총관객수", ascending=True)
 )
 
 # Plotly 가로 막대그래프 생성
@@ -205,7 +205,6 @@ fig4 = px.bar(
     text="총관객수",
 )
 
-# 호버 툴팁 및 막대 텍스트 레이블 설정
 fig4.update_traces(
     hovertemplate="<b>영화명:</b> %{y}<br><b>총 관객수:</b> %{x:,.0f}명<br><b>10위권 진입 일수:</b> %{customdata[0]}일<extra></extra>",
     texttemplate="%{x:,.0f}명",
@@ -216,7 +215,7 @@ fig4.update_traces(
 fig4.update_layout(
     xaxis_title="총 관객수 (명)",
     yaxis_title="영화 제목",
-    xaxis=dict(range=[0, top10_summary["총관객수"].max() * 1.15]),  # 텍스트가 가려지지 않도록 여백 지정
+    xaxis=dict(range=[0, top10_summary["총관객수"].max() * 1.15]),
 )
 
 st.plotly_chart(fig4, use_container_width=True)
@@ -228,8 +227,68 @@ st.info(
 st.markdown("---")
 
 
-# 8. 추후 그래프 추가를 위한 구역 예시
-st.header("📌 Section 5. (추가 예정 구역)")
+# 8. 그래프 구역 5: 월×요일별 일관객 합계 히트맵
+st.header("📌 Section 5. 월×요일별 일관객 합계 히트맵")
+
+# 월, 요일 데이터 추출
+heatmap_df = data.copy()
+heatmap_df["월"] = heatmap_df["날짜"].dt.month.astype(str) + "월"
+heatmap_df["요일"] = heatmap_df["날짜"].dt.day_name()
+
+# 요일 한글 변환 및 월요일~일요일 순서 정렬
+day_map = {
+    "Monday": "월요일",
+    "Tuesday": "화요일",
+    "Wednesday": "수요일",
+    "Thursday": "목요일",
+    "Friday": "금요일",
+    "Saturday": "토요일",
+    "Sunday": "일요일",
+}
+days_order = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
+
+heatmap_df["요일"] = heatmap_df["요일"].map(day_map)
+
+# 월×요일별 일관객 합계 피벗 테이블 생성
+pivot_df = heatmap_df.pivot_table(
+    index="월", columns="요일", values="일관객", aggfunc="sum"
+)
+
+# 월 순서(1월~12월) 및 요일 순서(월~일) 정렬
+month_order = [f"{m}월" for m in range(1, 13) if f"{m}월" in pivot_df.index]
+pivot_df = pivot_df.reindex(index=month_order, columns=days_order)
+
+# Plotly 히트맵 생성
+fig5 = px.imshow(
+    pivot_df,
+    labels=dict(x="요일", y="월", color="총 관객수 (명)"),
+    x=days_order,
+    y=month_order,
+    color_continuous_scale="Reds",  # 관객수가 많을수록 짙은 붉은색
+    title="월×요일별 일관객 합계 분포",
+    text_auto=True,  # 각 셀에 수치 표시 (필요 시 주석 처리 가능)
+)
+
+fig5.update_traces(
+    hovertemplate="<b>%{y} %{x}</b><br>총 관객수: %{z:,.0f}명<extra></extra>"
+)
+
+fig5.update_layout(
+    xaxis_title="요일",
+    yaxis_title="월",
+)
+
+st.plotly_chart(fig5, use_container_width=True)
+
+st.info(
+    "💡 **이 그래프로 알 수 있는 것:** 연중 어떤 월과 요일에 관객 집결도가 가장 높은지(성수기 주말 등) 시각적 패턴으로 쉽게 확인할 수 있습니다."
+)
+
+st.markdown("---")
+
+
+# 9. 추후 그래프 추가를 위한 구역 예시
+st.header("📌 Section 6. (추가 예정 구역)")
 st.caption("새로운 그래프가 추가될 위치입니다.")
 st.info("💡 **이 그래프로 알 수 있는 것:** (추가 예정 설명 문구)")
 
