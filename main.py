@@ -145,7 +145,7 @@ fig3.update_traces(
 # 합계 관객수가 가장 컸던 상위 3일 추출
 top3_days = daily_sum.nlargest(3, "총일관객")
 
-# 상위 3일에 어노테이션(화살표 및 날짜/관객수 표기) 추가
+# 상위 3일에 어노테이션 추가
 for i, row in top3_days.reset_index().iterrows():
     date_str = row["날짜"].strftime("%Y-%m-%d")
     audience_val = row["총일관객"]
@@ -160,7 +160,7 @@ for i, row in top3_days.reset_index().iterrows():
         arrowwidth=2,
         arrowcolor="#d62728",
         ax=0,
-        ay=-40,  # 텍스트 박스를 점 위로 띄움
+        ay=-40,
         bgcolor="rgba(255, 255, 255, 0.8)",
         bordercolor="#d62728",
         borderwidth=1,
@@ -181,8 +181,55 @@ st.info(
 st.markdown("---")
 
 
-# 7. 추후 그래프 추가를 위한 구역 예시
-st.header("📌 Section 4. (추가 예정 구역)")
+# 7. 그래프 구역 4: 기간 내 관객수 TOP 10 영화 (가로 막대그래프)
+st.header("📌 Section 4. 기간 내 일관객 합계 TOP 10 영화")
+
+# 영화별 총 일관객 합계 및 10위권 집계 일수 계산
+top10_summary = (
+    data.groupby("영화명")
+    .agg(총관객수=("일관객", "sum"), 진입일수=("날짜", "count"))
+    .reset_index()
+    .nlargest(10, "총관객수")
+    .sort_values("총관객수", ascending=True)  # Plotly 가로 막대에서 가장 큰 값이 위에 오도록 정렬
+)
+
+# Plotly 가로 막대그래프 생성
+fig4 = px.bar(
+    top10_summary,
+    x="총관객수",
+    y="영화명",
+    orientation="h",
+    custom_data=["진입일수"],
+    title="기간 내 일관객 합계 TOP 10 영화",
+    labels={"총관객수": "총 관객수 (명)", "영화명": "영화 제목"},
+    text="총관객수",
+)
+
+# 호버 툴팁 및 막대 텍스트 레이블 설정
+fig4.update_traces(
+    hovertemplate="<b>영화명:</b> %{y}<br><b>총 관객수:</b> %{x:,.0f}명<br><b>10위권 진입 일수:</b> %{customdata[0]}일<extra></extra>",
+    texttemplate="%{x:,.0f}명",
+    textposition="outside",
+    marker_color="#2ca02c",
+)
+
+fig4.update_layout(
+    xaxis_title="총 관객수 (명)",
+    yaxis_title="영화 제목",
+    xaxis=dict(range=[0, top10_summary["총관객수"].max() * 1.15]),  # 텍스트가 가려지지 않도록 여백 지정
+)
+
+st.plotly_chart(fig4, use_container_width=True)
+
+st.info(
+    "💡 **이 그래프로 알 수 있는 것:** 조사 기간 동안 가장 뛰어난 누적 관객 성과를 거둔 대표 상위 10개 작품과 각 작품의 박스오피스 TOP 10 유지가능 일수를 한눈에 파악할 수 있습니다."
+)
+
+st.markdown("---")
+
+
+# 8. 추후 그래프 추가를 위한 구역 예시
+st.header("📌 Section 5. (추가 예정 구역)")
 st.caption("새로운 그래프가 추가될 위치입니다.")
 st.info("💡 **이 그래프로 알 수 있는 것:** (추가 예정 설명 문구)")
 
